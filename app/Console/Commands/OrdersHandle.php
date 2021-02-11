@@ -36,11 +36,9 @@ class OrdersHandle extends Command
     private $count;
 
     //Проверка
-    private function inCsvTable(int $shippingID): bool
+    private function isInCsvTable(int $shippingID): bool
     {
-        $output = CreatedCsv::where('shipping_id', $shippingID)->get()->toArray();
-
-        return !empty($output);
+        return !is_null(CreatedCsv::firstWhere('shipping_id', $shippingID));
     }
 
     private function addRecordToCsvTable(int $shippingId)
@@ -57,7 +55,7 @@ class OrdersHandle extends Command
     private function addRowToCsvFile(\Illuminate\Support\Collection $shippingFetch, $csvFileHandler)
     {
         foreach ($shippingFetch as $key => $value) {
-            if ($this->inCsvTable($value->id)) continue;
+            if ($this->isInCsvTable($value->id)) continue;
 
             $tempCsvRow = [];
 

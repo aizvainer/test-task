@@ -41,16 +41,6 @@ class OrdersHandle extends Command
         return (bool)CreatedCsv::firstWhere('shipping_id', $shippingID);
     }
 
-    private function addRecordToCsvTable(int $shippingId)
-    {
-        DB::table('created_csvs')->insert(
-            array(
-                'shipping_id' => $shippingId,
-                'csv_status' => "$this->csvFileName updated",
-                'creation_date' => date('Y-m-d H:i:s', time()),
-            )
-        );
-    }
 
     private function addRowToCsvFile(\Illuminate\Support\Collection $shippingFetch, $csvFileHandler)
     {
@@ -65,10 +55,17 @@ class OrdersHandle extends Command
             $tempCsvRow[] = $value->sending_date;
             $tempCsvRow[] = $value->id;
 
-            $this->addRecordToCsvTable($value->id);
+
+            CreatedCsv::create(
+                [
+                    'shipping_id' => $value->id,
+                    'csv_status' => "$this->csvFileName updated",
+                    'creation_date' => date('Y-m-d H:i:s', time()),
+                ]
+            );
 
             fputcsv($csvFileHandler, $tempCsvRow, ';', ' ');
-            
+
             $this->count += 1;
         }
     }
@@ -83,7 +80,7 @@ class OrdersHandle extends Command
 
             echo "$this->csvFileName file created\n\n";
         } else {
-            $this->csvFileResource = fopen(self::SHIPPING_PATH .$this->csvFileName, 'a');
+            $this->csvFileResource = fopen(self::SHIPPING_PATH . $this->csvFileName, 'a');
         }
     }
 
@@ -128,11 +125,8 @@ class OrdersHandle extends Command
             unlink($pathToXML);
 
             echo "$file is deleted\n";
-
-            
         }
 
         echo "\nRecords added: $this->count";
-
     }
 }

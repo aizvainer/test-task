@@ -23,9 +23,6 @@ class OrdersHandle extends Command
      */
     protected $description = 'Create .csv file from xml data, add record to database';
 
-    protected $shippingTable;
-    protected $csvTable;
-
 
     private const ORDER_PATH = __DIR__ . '/../../../storage/app/orders/';
     private const SHIPPING_PATH = __DIR__ . '/../../../storage/app/shipping/';
@@ -41,7 +38,7 @@ class OrdersHandle extends Command
     //Проверка
     private function inCsvTable(int $shippingID): bool
     {
-        $output = $this->csvTable->where('shipping_id', $shippingID)->get()->toArray();
+        $output = CreatedCsv::where('shipping_id', $shippingID)->get()->toArray();
 
         return !empty($output);
     }
@@ -103,9 +100,6 @@ class OrdersHandle extends Command
 
         $this->xmlDir = opendir(self::ORDER_PATH);
 
-        $this->shippingTable = new Shipping();
-        $this->csvTable = new CreatedCsv();
-
         $this->count = 0;
     }
 
@@ -126,7 +120,7 @@ class OrdersHandle extends Command
 
             $tempXML = simplexml_load_file($pathToXML);
 
-            $tempShippingCollect = $this->shippingTable->where('order_id', $tempXML->OrderNo)->get();
+            $tempShippingCollect = Shipping::where('order_id', $tempXML->OrderNo)->get();
 
             //Если в таблице нет подходяших записей - пропуск
             if (empty($tempShippingCollect->toArray())) continue;

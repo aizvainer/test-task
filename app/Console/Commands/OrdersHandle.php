@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\CreatedCsv;
+use App\Models\Shipping;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -21,6 +23,9 @@ class OrdersHandle extends Command
      */
     protected $description = 'Create .csv file from xml data, add record to database';
 
+    protected $shippingTable;
+    protected $csvTableTable;
+
 
     private const ORDER_PATH = __DIR__ . '/../../../storage/app/orders/';
     private const SHIPPING_PATH = __DIR__ . '/../../../storage/app/shipping/';
@@ -36,7 +41,7 @@ class OrdersHandle extends Command
     //Проверка
     private function inCsvTable(int $shippingID): bool
     {
-        $output = DB::table('created_csvs')->where('shipping_id', $shippingID)->get()->toArray();
+        $output = $this->scvTable->where('shipping_id', $shippingID)->get()->toArray();
 
         return !empty($output);
     }
@@ -98,6 +103,9 @@ class OrdersHandle extends Command
 
         $this->xmlDir = opendir(self::ORDER_PATH);
 
+        $this->shippingTable = new Shipping();
+        $this->scvTable = new CreatedCsv();
+
         $this->count = 0;
     }
 
@@ -118,7 +126,7 @@ class OrdersHandle extends Command
 
             $tempXML = simplexml_load_file($pathToXML);
 
-            $tempShippingCollect = DB::table('shipping')->where('order_id', $tempXML->OrderNo)->get();
+            $tempShippingCollect = $this->shippingTable->where('order_id', $tempXML->OrderNo)->get();
 
             //Если в таблице нет подходяших записей - пропуск
             if (empty($tempShippingCollect->toArray())) continue;

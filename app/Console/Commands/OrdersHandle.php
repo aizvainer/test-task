@@ -24,7 +24,7 @@ class OrdersHandle extends Command
     protected $description = 'Create .csv file from xml data, add record to database';
 
     protected $shippingTable;
-    protected $csvTableTable;
+    protected $csvTable;
 
 
     private const ORDER_PATH = __DIR__ . '/../../../storage/app/orders/';
@@ -41,7 +41,7 @@ class OrdersHandle extends Command
     //Проверка
     private function inCsvTable(int $shippingID): bool
     {
-        $output = $this->scvTable->where('shipping_id', $shippingID)->get()->toArray();
+        $output = $this->csvTable->where('shipping_id', $shippingID)->get()->toArray();
 
         return !empty($output);
     }
@@ -104,7 +104,7 @@ class OrdersHandle extends Command
         $this->xmlDir = opendir(self::ORDER_PATH);
 
         $this->shippingTable = new Shipping();
-        $this->scvTable = new CreatedCsv();
+        $this->csvTable = new CreatedCsv();
 
         $this->count = 0;
     }

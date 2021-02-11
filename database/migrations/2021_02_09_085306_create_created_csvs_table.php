@@ -14,8 +14,8 @@ class CreateCreatedCsvsTable extends Migration
     public function up()
     {
         Schema::create('created_csvs', function (Blueprint $table) {
-            $table->bigIncrements('id');
-            $table->bigInteger('shipping_id');
+            $table->id();
+            $table->foreignId('shipping_id')->constrained('shipping');
             $table->string('csv_status', 50);
             $table->dateTime('creation_date');
         });

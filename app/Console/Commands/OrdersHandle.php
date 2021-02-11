@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\CreatedCsv;
 use App\Models\Shipping;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\DB;
 
 class OrdersHandle extends Command
 {
@@ -23,26 +22,25 @@ class OrdersHandle extends Command
      */
     protected $description = 'Create .csv file from xml data, add record to database';
 
+    protected $orderPath;
+    protected $shippingPath;
 
-    private const ORDER_PATH = __DIR__ . '/../../../storage/app/orders/';
-    private const SHIPPING_PATH = __DIR__ . '/../../../storage/app/shipping/';
+    protected const CSV_HEADING = ['order_id', 'type', 'tracking_number', 'sending_date', 'shipmentNo'];
 
-    private const CSV_HEADING = array('order_id', 'type', 'tracking_number', 'sending_date', 'shipmentNo');
+    protected $xmlDir;
+    protected $csvFileResource;
+    protected $csvFileName;
 
-    private $xmlDir;
-    private $csvFileResource;
-    private $csvFileName;
-
-    private $count;
+    protected $count = 0;
 
     //Проверка
-    private function isInCsvTable(int $shippingID): bool
+    protected function isInCsvTable(int $shippingID): bool
     {
         return (bool)CreatedCsv::firstWhere('shipping_id', $shippingID);
     }
 
 
-    private function addRowToCsvFile(\Illuminate\Support\Collection $shippingFetch, $csvFileHandler)
+    protected function addRowToCsvFile(\Illuminate\Support\Collection $shippingFetch, $csvFileHandler)
     {
         foreach ($shippingFetch as $key => $value) {
             if ($this->isInCsvTable($value->id)) continue;
@@ -66,21 +64,21 @@ class OrdersHandle extends Command
 
             fputcsv($csvFileHandler, $tempCsvRow, ';', ' ');
 
-            $this->count += 1;
+            $this->count++;
         }
     }
 
-    private function openCsvResource()
+    protected function openCsvResource()
     {
         $this->csvFileName =  $this->option('new') ? date('Y_m_d_H_i_s', time()) . '.csv' : 'default.csv';
 
-        if (!file_exists(self::SHIPPING_PATH . $this->csvFileName)) {
-            $this->csvFileResource = fopen(self::SHIPPING_PATH . $this->csvFileName, 'w');
+        if (!file_exists($this->shippingPath . $this->csvFileName)) {
+            $this->csvFileResource = fopen($this->shippingPath . $this->csvFileName, 'w');
             fputcsv($this->csvFileResource, self::CSV_HEADING, ';', ' ');
 
             echo "$this->csvFileName file created\n\n";
         } else {
-            $this->csvFileResource = fopen(self::SHIPPING_PATH . $this->csvFileName, 'a');
+            $this->csvFileResource = fopen($this->shippingPath . $this->csvFileName, 'a');
         }
     }
 
@@ -93,9 +91,10 @@ class OrdersHandle extends Command
     {
         parent::__construct();
 
-        $this->xmlDir = opendir(self::ORDER_PATH);
+        $this->orderPath = storage_path('app/orders/');
+        $this->shippingPath = storage_path('app/shipping/');
 
-        $this->count = 0;
+        $this->xmlDir = opendir($this->orderPath);
     }
 
     /**
@@ -111,7 +110,7 @@ class OrdersHandle extends Command
 
             if (!str_contains($file, '.xml')) continue;
 
-            $pathToXML = self::ORDER_PATH . $file;
+            $pathToXML = $this->orderPath . $file;
 
             $tempXML = simplexml_load_file($pathToXML);
 

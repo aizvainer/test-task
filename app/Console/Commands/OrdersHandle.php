@@ -38,7 +38,7 @@ class OrdersHandle extends Command
     //Проверка
     private function isInCsvTable(int $shippingID): bool
     {
-        return !is_null(CreatedCsv::firstWhere('shipping_id', $shippingID));
+        return (bool)CreatedCsv::firstWhere('shipping_id', $shippingID);
     }
 
     private function addRecordToCsvTable(int $shippingId)

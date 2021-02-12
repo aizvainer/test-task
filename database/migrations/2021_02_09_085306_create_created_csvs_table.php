@@ -16,7 +16,7 @@ class CreateCreatedCsvsTable extends Migration
         Schema::create('created_csvs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('shipping_id')->constrained('shipping');
-            $table->boolean('csv_status', false);
+            $table->boolean('csv_status')->default(false);
             $table->timestamps();
         });
     }

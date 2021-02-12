@@ -57,8 +57,7 @@ class OrdersHandle extends Command
             CreatedCsv::create(
                 [
                     'shipping_id' => $value->id,
-                    'csv_status' => "$this->csvFileName updated",
-                    'creation_date' => date('Y-m-d H:i:s', time()),
+                    'csv_status' => true,
                 ]
             );
 

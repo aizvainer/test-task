@@ -8,4 +8,6 @@ class CreatedCsv extends Model
 {
 
     protected $fillable = ['shipping_id', 'csv_status'];
+
+    protected $casts = ['csv_status' => 'boolean'];
 }

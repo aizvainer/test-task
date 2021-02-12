@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\CreatedCsv;
 use App\Models\Shipping;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\File;
 
 class OrdersHandle extends Command
 {
@@ -24,11 +25,10 @@ class OrdersHandle extends Command
 
     protected $orderPath;
     protected $shippingPath;
+    protected $csvFilePath;
 
-    protected const CSV_HEADING = ['order_id', 'type', 'tracking_number', 'sending_date', 'shipmentNo'];
+    protected const CSV_HEADING = "order_id;type;tracking_number;sending_date;shipmentNo\n";
 
-    protected $xmlDir;
-    protected $csvFileResource;
     protected $csvFileName;
 
     protected $count = 0;
@@ -40,18 +40,18 @@ class OrdersHandle extends Command
     }
 
 
-    protected function addRowToCsvFile(\Illuminate\Support\Collection $shippingFetch, $csvFileHandler)
+    protected function addRowToCsvFile(\Illuminate\Support\Collection $shippingFetch)
     {
         foreach ($shippingFetch as $key => $value) {
             if ($this->isInCsvTable($value->id)) continue;
 
-            $tempCsvRow = [];
+            $tempCsvRow = '';
 
-            $tempCsvRow[] = $value->order_id;
-            $tempCsvRow[] = $value->type;
-            $tempCsvRow[] = $value->tracking_number;
-            $tempCsvRow[] = $value->sending_date;
-            $tempCsvRow[] = $value->id;
+            $tempCsvRow .= $value->order_id.";";
+            $tempCsvRow .= $value->type.";";
+            $tempCsvRow .= $value->tracking_number.";";
+            $tempCsvRow .= $value->sending_date.";";
+            $tempCsvRow .= $value->id."\n";
 
 
             CreatedCsv::create(
@@ -61,23 +61,21 @@ class OrdersHandle extends Command
                 ]
             );
 
-            fputcsv($csvFileHandler, $tempCsvRow, ';', ' ');
+            File::append($this->csvFilePath, $tempCsvRow);
 
             $this->count++;
         }
     }
 
-    protected function openCsvResource()
+    protected function createCsvFile()
     {
         $this->csvFileName =  $this->option('new') ? date('Y_m_d_H_i_s', time()) . '.csv' : 'default.csv';
+        $this->csvFilePath = $this->shippingPath.$this->csvFileName;
 
-        if (!file_exists($this->shippingPath . $this->csvFileName)) {
-            $this->csvFileResource = fopen($this->shippingPath . $this->csvFileName, 'w');
-            fputcsv($this->csvFileResource, self::CSV_HEADING, ';', ' ');
-
+        if (!File::exists($this->csvFilePath)) {
+            File::put($this->csvFilePath,'');
+            File::append($this->csvFilePath, self::CSV_HEADING);
             echo "$this->csvFileName file created\n\n";
-        } else {
-            $this->csvFileResource = fopen($this->shippingPath . $this->csvFileName, 'a');
         }
     }
 
@@ -92,39 +90,36 @@ class OrdersHandle extends Command
 
         $this->orderPath = storage_path('app/orders/');
         $this->shippingPath = storage_path('app/shipping/');
-
-        $this->xmlDir = opendir($this->orderPath);
     }
 
     /**
      * Execute the console command.
      *
-     * @return int
+     * @return void
      */
     public function handle()
     {
-        $this->openCsvResource();
+        $this->createCsvFile();
 
-        while (($file = readdir($this->xmlDir)) !== false) {
+        foreach (File::files($this->orderPath) as $file) {
 
             if (!str_contains($file, '.xml')) continue;
 
-            $pathToXML = $this->orderPath . $file;
-
-            $tempXML = simplexml_load_file($pathToXML);
+            $tempXML = simplexml_load_file($file);
 
             $tempShippingCollect = Shipping::where('order_id', $tempXML->OrderNo)->get();
 
             //Если в таблице нет подходяших записей - пропуск
             if (empty($tempShippingCollect->toArray())) continue;
 
-            $this->addRowToCsvFile($tempShippingCollect, $this->csvFileResource);
+            $this->addRowToCsvFile($tempShippingCollect);
 
-            unlink($pathToXML);
+            File::delete($file);
 
             echo "$file is deleted\n";
         }
 
         echo "\nRecords added: $this->count";
+
     }
 }

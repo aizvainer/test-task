@@ -34,13 +34,13 @@ class OrdersHandle extends Command
     protected $count = 0;
 
     //Проверка
-    protected function isInCsvTable(int $shippingID): bool
+    public static function isInCsvTable(int $shippingID): bool
     {
         return (bool)CreatedCsv::firstWhere('shipping_id', $shippingID);
     }
 
 
-    protected function addRowToCsvFile(\Illuminate\Support\Collection $shippingFetch)
+    protected function addRowToCsvFile(array $shippingFetch) : array
     {
         foreach ($shippingFetch as $key => $value) {
             if ($this->isInCsvTable($value->id)) continue;
@@ -53,7 +53,6 @@ class OrdersHandle extends Command
             $tempCsvRow .= $value->sending_date.";";
             $tempCsvRow .= $value->id."\n";
 
-
             CreatedCsv::create(
                 [
                     'shipping_id' => $value->id,
@@ -65,9 +64,11 @@ class OrdersHandle extends Command
 
             $this->count++;
         }
+
+        return [];
     }
 
-    protected function createCsvFile()
+    public function createCsvFile()
     {
         $this->csvFileName =  $this->option('new') ? date('Y_m_d_H_i_s', time()) . '.csv' : 'default.csv';
         $this->csvFilePath = $this->shippingPath.$this->csvFileName;
@@ -107,10 +108,10 @@ class OrdersHandle extends Command
 
             $tempXML = simplexml_load_file($file);
 
-            $tempShippingCollect = Shipping::where('order_id', $tempXML->OrderNo)->get();
+            $tempShippingCollect = Shipping::where('order_id', $tempXML->OrderNo)->get()->toArray();
 
             //Если в таблице нет подходяших записей - пропуск
-            if (empty($tempShippingCollect->toArray())) continue;
+            if (empty($tempShippingCollect)) continue;
 
             $this->addRowToCsvFile($tempShippingCollect);
 
